@@ -1,7 +1,7 @@
 using StructuredIlluminationMicroscopy
 using TestImages
 using BenchmarkTools
-using CUDA
+# using CUDA
 using FourierTools # for resampling and diagnostic purposes
 using View5D  # for visualization, @vt etc.
 
@@ -15,7 +15,7 @@ function main()
     # SIM illumination pattern
     num_directions = 3; num_images =  3*num_directions; num_orders = 2
     rel_peak = 0.40 # peak position relative to sampling limit on fine grid
-    k_peak_pos, peak_phases, peak_strengths, otf_indices, otf_phases = generate_peaks(num_images, num_directions, num_orders, rel_peak / (num_orders-1))
+    k_peak_pos, peak_phases, peak_strengths, otf_indices, otf_phases = generate_peaks(num_images, num_directions, num_orders, rel_peak / (num_orders-1); lattice_shift=[1.1, 0.0, 0.0])
 
     num_photons = 1000.00
     spf = SIMParams(pp, sampling, num_photons, 100.0, k_peak_pos, peak_phases, peak_strengths, otf_indices, otf_phases);

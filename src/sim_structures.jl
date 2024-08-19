@@ -172,11 +172,11 @@ mutable struct PreparationParams{RAT, CAT} # , CT, D, RT, TA <: AbstractArray{CT
 end
 
 """
-    SIMPattern(p, sp, n, otf_num)
+    SIMPattern(h, sp, n, otf_num)
 
 Generate the SIM illumination pattern.
 Parameters:
-+ `h::PSF` : PSF object, needed only to determine the datatype.
++ `h::PSF` : PSF object, needed only to determine the size and datatype.
 + sp::SIMParams : SIMParams object
 + `n::Int` : image number
 + `otf_num::Int` : OTF number (only frequencies associated to this OTF number are considered)

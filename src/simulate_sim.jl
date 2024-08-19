@@ -8,7 +8,7 @@ Parameters:
 + `num_orders::Int` : number of orders
 + `k0::Float64`: peak frequency of first order (relative to the Nyquist frequency of the image)
 """
-function generate_peaks(num_phases::Int=9, num_directions::Int=3, num_orders::Int=2, k1 = 0.9, single_zero_order=true, k1z = 0.0; use_lattice=false, lattice_shift=nothing)
+function generate_peaks(num_phases::Int=9, num_directions::Int=3, num_orders::Int=2, k1 = 0.9, single_zero_order=true, k1z = 0.0; use_lattice=false,seq_lattice=false, lattice_shift=nothing)
     num_peaks = num_directions * num_orders;
     if (single_zero_order)
         num_peaks -= num_directions - 1 
@@ -34,26 +34,49 @@ function generate_peaks(num_phases::Int=9, num_directions::Int=3, num_orders::In
         end
     end
 
-    if isnothing(lattice_shift) && use_lattice
+    #if isnothing(lattice_shift) && use_lattice
         # calculate ideal lattic shift here
-    end
+    #end
+    
     peak_phases = zeros(num_phases, num_peaks)
     peak_strengths = zeros(num_phases, num_peaks)
     phases_per_cycle = num_phases ÷ num_directions
-    current_peak = 1
     for p in 0:num_phases-1 # starts at zero
         current_d = p ÷ phases_per_cycle  # directions start at 0
         current_peak = 1
         for d in 0:num_directions-1 # starts at zero
             for o in 0:num_orders-1
-                if (o > 0 || d==0 || single_zero_order == false)
-                    if (o == 0 || d == current_d)
-                        if (use_lattice)
-                            my_k_vec = k_peak_pos[current_peak]
-                            peak_phases[p+1, current_peak] = exp(1îm * dot(lattice_shift, my_k_vec))
+                if (o > 0 || d==0 || single_zero_order == false) # ignore zero orders of other directions
+                    my_k_vec = k_peak_pos[current_peak] #assign a k vector
+
+                    if (use_lattice || seq_lattice)
+                        if (seq_lattice)
+                            if (p+1)% 4 == 1 || (p+1) % 4 == 2|| (p+1) % 4 == 3 #num_directions/2
+                                y=0
+                                x=1
+                                # peak_phases[p+1, current_peak] = p*dot([0.0,a2,0.0], my_k_vec)
+                            else 
+                                y=1
+                                x=0
+                               # @show p, d, o
+                              # peak_phases[p+1, current_peak] = p*dot([a1,0.0,0.0], my_k_vec)
+                            end
+                            
+                            peak_phases[p+1, current_peak] = p*dot([x,y,0.0], my_k_vec)
+                            @show p, x, y, current_peak, peak_phases[p+1, current_peak],  my_k_vec
                         else
-                            peak_phases[p+1, current_peak] = mod(2pi*o*p/phases_per_cycle, 2pi)
+
+                            peak_phases[p+1, current_peak] = p*dot(lattice_shift, my_k_vec)#phase (orignal my_k_vec) is shifted by lattice_shift. Multiplied by p(num_phases). 
+                        end #orders are already given in current_peak.
+                        if (o == 0)
+                             @show p, d, o
+                            peak_strengths[p+1, current_peak] = 0.33*pi #num_directions first row will be set to num_directions (ausgleich) before(num_directions) through interative testing 0.33*pi was set 
+                        else
+                            peak_strengths[p+1, current_peak] =1 #setting all other values of the matrix to 1 for a hexagonal pattern
                         end
+                    
+                    elseif (o == 0 || d == current_d)
+                        peak_phases[p+1, current_peak] = mod(2pi*o*p/phases_per_cycle, 2pi)
                         peak_strengths[p+1, current_peak] = 1.0
                     end
                     current_peak += 1
@@ -62,9 +85,6 @@ function generate_peaks(num_phases::Int=9, num_directions::Int=3, num_orders::In
         end
     end
 
-    if use_lattice
-        peak_strength[:,1] = num_directions
-    end    
     otf_indices, otf_phases = make_3d_pattern(k_peak_pos, 0.0); # no offset_phase
 
     return k_peak_pos, peak_phases, peak_strengths, otf_indices, otf_phases
